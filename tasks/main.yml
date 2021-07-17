@@ -1,61 +1,15 @@
 ---
 # tasks file for xfs-partition
-- name: Installing packages to mount as xfs
-  apt: 
-    name: ['xfsprogs']
-    state: present
-    update_cache: yes
 
-- name: Get list of block devices
-  command: 'lsblk -lno NAME'
-  register: results
-
-- name: Create variable block_devices
-  set_fact:
-    block_devices: "{{ results.stdout_lines }}"
+- name: Checking mount point
+  command: mountpoint -q {{mount_point}}
+  register: volume_stat
+  failed_when: False
+  changed_when: False
 
 - debug:
-    var: block_devices
+    msg: "It is a mountpoint!"
+  when: volume_stat.rc == 0
 
-- name: block_device
-  prompt: Which block device to use?
-  private: no
-
-- fail: msg="Block device is not selected!"
-  when: block_device == ""
-
-- name: Verifying disk is empty
-  command: 'file -s {{block_device}}'
-  register: results
-
-- fail: msg="Block device is not empty!"
-  when: results.stdout_lines[0] != "data"
-
-- name: Creating a partition
-  command: 'fdisk {{block_device}}'
-
-- name:  Formatting as xfs
-  command: 'mkfs.xfs -f {{block_device}}'
-
-- name:  Creating mount point directory
-  file: path="{{mount_path}}" state=directory
-
-- name: Mounting volume
-  command: "mount -t xfs {{block_device}} {{mount_path}}"
-
-# - name: Adding permissions to kafka directory
-#   chown -R ubuntu:ubuntu {{mount_path}}
-
-- name: Checking mount point is working
-  command: "df -h {{mount_path}}"
-
-- name: Configuring automount on start
-  lineinfile:
-    path: "/etc/fstab"
-    line: "{{block_device}} {{mount_path}} xfs defaults 0 0"
-    state: present
-    backup: True
-
-- name: Rebooting server to verify mounting on start
-  reboot:
-    reboot_timeout: 3600
+- include_tasks: create_xfs.yml
+  when: volume_stat.rc != 0

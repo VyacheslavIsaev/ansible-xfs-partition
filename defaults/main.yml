@@ -1,4 +1,3 @@
 ---
 # defaults file for xfs-partition
-mount_path: "/data"
-block_device: "/dev/xvdf"
+mount_point: "/data"
