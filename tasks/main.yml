@@ -1,7 +1,10 @@
 ---
 # tasks file for xfs-partition
 - name: Installing packages to mount as xfs
-  apt-get install -y xfsprogs
+  apt: 
+    name: ['xfsprogs']
+    state: present
+    update_cache: yes
 
 - name: Get list of block devices
   command: 'lsblk -lno NAME'
@@ -18,10 +21,15 @@
   prompt: Which block device to use?
   private: no
 
+- fail: msg="Block device is not selected!"
+  when: block_device == ""
+
 - name: Verifying disk is empty
   command: 'file -s {{block_device}}'
   register: results
-  failed_when:  results.stdout_lines[0] != "data"
+
+- fail: msg="Block device is not empty!"
+  when: results.stdout_lines[0] != "data"
 
 - name: Creating a partition
   command: 'fdisk {{block_device}}'
@@ -48,6 +56,6 @@
     state: present
     backup: True
 
-- name: Rebooting server to check if drive mounted
+- name: Rebooting server to verify mounting on start
   reboot:
     reboot_timeout: 3600
