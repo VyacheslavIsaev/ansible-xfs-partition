@@ -33,10 +33,35 @@
   command: 'file -s {{block_device}}'
   register: results
 
-- debug: msg="Response- {{results}}"
+- debug: msg="Response- {{results.stdout}}"
+
+- name: Settin is empty flag
+  set_fact: 
+    devise_is_not_empty: "{{results.stdout_lines[0] != \"{{block_device}}{{':'}} data\"}}"
+
+- name: Block device is not empty
+  pause:
+    prompt: Would you like to remove partition (yes/NO)?
+  register: delete_partition_input
+  when: devise_is_not_empty
+
+- name: Settin delete_partition flag
+  set_fact: 
+    delete_partition: "{{delete_partition_input.user_input}}"
+
+- debug: msg="{{devise_is_not_empty}}"
+
+- debug: msg="{{delete_partition}}"
 
 - fail: msg="Block device is not empty!"
-  when: results.stdout_lines[0] != "{{block_device}}{{':'}} data"
+  when: devise_is_not_empty and not delete_partition
+
+- name: Deleting partition
+  parted:
+    device: "{{block_device}}"
+    number: 1
+    state: absent
+  when: delete_partition
 
 - name: Creating a partition
   parted:
