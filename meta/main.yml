@@ -1,5 +1,5 @@
 galaxy_info:
-  role_name: xfs-partition
+  role_name: xfs_partition
   author: Viacheslav Isaev
   description: Helps to create and mount xfs partition
 
